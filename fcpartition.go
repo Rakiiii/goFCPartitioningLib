@@ -5,21 +5,27 @@ import (
 )
 
 type solutionTreeNode struct {
-	lNode  *solutionTreeNode
-	rNode  *solutionTreeNode
-	vector []bool
+	parentNode *solutionTreeNode
+	lNode      *solutionTreeNode
+	rNode      *solutionTreeNode
+	vector     []bool
+	isChecked  bool
 }
 
 func (s *solutionTreeNode) constructLeftNode() {
-	s.lNode = &solutionTreeNode{lNode: nil, rNode: nil, vector: append([]bool{false}, s.vector...)}
+	s.lNode = &solutionTreeNode{lNode: nil, rNode: nil, vector: append([]bool{false}, s.vector...), parentNode: s, isChecked: false}
 }
 
 func (s *solutionTreeNode) constructRightNode() {
-	s.rNode = &solutionTreeNode{lNode: nil, rNode: nil, vector: append([]bool{true}, s.vector...)}
+	s.rNode = &solutionTreeNode{lNode: nil, rNode: nil, vector: append([]bool{true}, s.vector...), parentNode: s, isChecked: false}
 }
 
 func (s *solutionTreeNode) isFinnalNode(g lsplib.IGraph) bool {
 	return len(s.vector) == g.AmountOfVertex()-g.GetAmountOfIndependent()
+}
+
+func (s *solutionTreeNode) isAnyNodeCheckable() bool {
+	return s.lNode == nil || s.rNode == nil || !s.lNode.isChecked || !s.rNode.isChecked || s.parentNode != nil
 }
 
 func reverseBool(s []bool) []bool {
@@ -34,7 +40,10 @@ type FCPartitioner struct {
 }
 
 func NewFCPartitioner() *FCPartitioner {
-	return &FCPartitioner{solutionTreeRoot: &solutionTreeNode{vector: nil, lNode: &solutionTreeNode{vector: []bool{false}, lNode: nil, rNode: nil}, rNode: &solutionTreeNode{vector: []bool{true}, lNode: nil, rNode: nil}}}
+	partitioner := &FCPartitioner{solutionTreeRoot: &solutionTreeNode{vector: []bool{}, lNode: nil, rNode: nil, isChecked: false, parentNode: nil}}
+	partitioner.solutionTreeRoot.constructLeftNode()
+	partitioner.solutionTreeRoot.constructRightNode()
+	return partitioner
 }
 
 func boolVectorToInt(b []bool) []int {
@@ -50,16 +59,14 @@ func boolVectorToInt(b []bool) []int {
 }
 
 func checkNode(s *solutionTreeNode, g lsplib.IGraph, baseSoulution *FCPartitionSolution, groupSize int) {
-	// fmt.Println("checking solution:", boolVectorToInt(s.vector), " best value:", baseSoulution.Value)
+	s.isChecked = true
 	if len(s.vector) > 4 {
 		if s.isFinnalNode(g) {
 			newSol := new(lsplib.Solution)
 
 			newSol.Init(g)
 			newSol.Vector = append(make([]bool, g.GetAmountOfIndependent()), reverseBool(s.vector)...)
-			//newSol.CountMark()
 			mark := newSol.CountMark()
-			// fmt.Println("full solution:", boolVectorToInt(newSol.Vector), " mark is:", mark)
 			if baseSoulution.Value == -1 {
 				if flag := newSol.PartIndependent(groupSize); flag {
 					baseSoulution.Solution = *newSol
@@ -84,7 +91,6 @@ func checkNode(s *solutionTreeNode, g lsplib.IGraph, baseSoulution *FCPartitionS
 			markList := baseSoulution.matchVectorWithAllMarks(s.vector)
 			for _, mark := range markList {
 				if mark >= baseSoulution.Value {
-					// fmt.Println("solution droped:", boolVectorToInt(s.vector), " with mark:", mark, " and base value:", baseSoulution.Value)
 					return
 				}
 			}
@@ -113,32 +119,94 @@ func (f *FCPartitioner) Partition(g lsplib.IGraph, baseSoulution *FCPartitionSol
 		return nil, err
 	}
 
-	// fmt.Println("mark map output")
-	// for key, value := range baseSoulution.markMap {
-	// 	fmt.Println("verteces:", key, " mark:", value)
-	// }
-
 	checkNode(f.solutionTreeRoot.lNode, g, baseSoulution, groupSize)
 	checkNode(f.solutionTreeRoot.rNode, g, baseSoulution, groupSize)
 
-	// for i := 4; i < g.GetAmountOfIndependent(); i++{
-	// 	baseSoulution.fcvector = make([]int, i)
+	return baseSoulution, nil
+}
 
-	// 	for vertexPosition := 0 ; vertexPosition < i; vertexPosition ++{
-	// 		baseSoulution.fcvector[vertexPosition] = vertexPosition
-	// 	}
+func (f *FCPartitioner) PartitionNonRec(g lsplib.IGraph, baseSoulution *FCPartitionSolution, groupSize int) (*FCPartitionSolution, error) {
+	if g.GetAmountOfIndependent() <= 4 {
+		solution := lsplib.LSPartiotionAlgorithmNonRecFast(g, &baseSoulution.Solution, groupSize)
+		baseSoulution.Solution = *solution
+		return baseSoulution, nil
+	}
 
-	// 	for vertexPosition := 0 ; vertexPosition < i; vertexPosition ++{
-	// 		for vertex := vertexPosition; vertex < g.GetAmountOfIndependent(); i ++{
-	// 			baseSoulution.fcvector[vertexPosition] = vertex
-	// 			subPartiotion := make([]bool,i)
-	// 			for k := 0; k < int(math.Pow(2,float64(i))); k++ {
+	if err := baseSoulution.constructMarkMap(); err != nil {
+		return nil, err
+	}
 
-	// 			}
-	// 		}
-	// 	}
-	// }
+	checkNode := f.solutionTreeRoot
+	for checkNode.isAnyNodeCheckable() {
+		if checkNode.lNode == nil && checkNode.rNode == nil {
+			if checkNode.isFinnalNode(g) {
+				newSol := new(lsplib.Solution)
 
+				newSol.Init(g)
+				newSol.Vector = append(make([]bool, g.GetAmountOfIndependent()), reverseBool(checkNode.vector)...)
+				mark := newSol.CountMark()
+				if baseSoulution.Value == -1 {
+					if flag := newSol.PartIndependent(groupSize); flag {
+						baseSoulution.Solution = *newSol
+						baseSoulution.CountParameter()
+						checkNode.isChecked = true
+						checkNode = checkNode.parentNode
+						continue
+					} else {
+						checkNode.isChecked = true
+						checkNode = checkNode.parentNode
+						continue
+					}
+				}
+				if mark < baseSoulution.Value {
+					if flag := newSol.PartIndependent(groupSize); flag {
+						if newSol.CountParameter() < baseSoulution.Value {
+							baseSoulution.Solution = *newSol
+							checkNode.isChecked = true
+							checkNode = checkNode.parentNode
+							continue
+						}
+					}
+				}
+				checkNode.isChecked = true
+				checkNode = checkNode.parentNode
+				continue
+			} else {
+				if baseSoulution.Value != -1 && len(checkNode.vector) >= 4 {
+					markList := baseSoulution.matchVectorWithAllMarks(checkNode.vector)
+					continueFlag := false
+					for _, mark := range markList {
+						if mark >= baseSoulution.Value {
+							continueFlag = true
+							break
+						}
+					}
+					if continueFlag {
+						checkNode.isChecked = true
+						checkNode = checkNode.parentNode
+						continue
+					}
+				}
+				checkNode.constructLeftNode()
+				checkNode.constructRightNode()
+				checkNode = checkNode.lNode
+				continue
+			}
+		} else {
+			if checkNode.lNode.isChecked && checkNode.rNode.isChecked && checkNode.parentNode != nil {
+				checkNode.isChecked = true
+				checkNode = checkNode.parentNode
+			} else {
+				if !checkNode.lNode.isChecked {
+					checkNode = checkNode.lNode
+				} else {
+					if !checkNode.rNode.isChecked {
+						checkNode = checkNode.rNode
+					}
+				}
+			}
+		}
+	}
 	return baseSoulution, nil
 }
 
