@@ -53,6 +53,10 @@ github.com/Rakiiii/goPerfectMathcingLib v0.2.3 h1:grTz9O2pZ5bNPgs/9j1hQ3/y7wY1im
 github.com/Rakiiii/goPerfectMathcingLib v0.2.3/go.mod h1:erGiWudGka437qqQ8F9xnFYylbOcyJzz6jYgyYwNi9A=
 github.com/Rakiiii/goPerfectMathcingLib v0.2.4 h1:JnKG8os9P4xOJxTDmstg74GhPvdpJEAJV2E0381TxSE=
 github.com/Rakiiii/goPerfectMathcingLib v0.2.4/go.mod h1:erGiWudGka437qqQ8F9xnFYylbOcyJzz6jYgyYwNi9A=
+github.com/Rakiiii/goPerfectMathcingLib v0.3.0 h1:dlZqIM4rnEI0f3j0zMdQYXdIczLfrW/xPsP79uxVOaI=
+github.com/Rakiiii/goPerfectMathcingLib v0.3.0/go.mod h1:erGiWudGka437qqQ8F9xnFYylbOcyJzz6jYgyYwNi9A=
+github.com/Rakiiii/goPerfectMathcingLib v0.3.1 h1:xpiX+VxbxRTYvfh4Sij/WghgOpOo0chm92sIocLfymc=
+github.com/Rakiiii/goPerfectMathcingLib v0.3.1/go.mod h1:erGiWudGka437qqQ8F9xnFYylbOcyJzz6jYgyYwNi9A=
 github.com/Rakiiii/goSort v0.0.3 h1:s2wswcUQWi1d24UOPJ+w2YgmDHa9bDXn46JOi0dI1D0=
 github.com/Rakiiii/goSort v0.0.3/go.mod h1:ir50upjpORk43rGVd9Kt43JRoCWmtWiLmqEKnmO3EPw=
 github.com/Rakiiii/goTuple v0.0.3 h1:4NyV0GzKmNbq1i8TeMFFXYieqzKZ7nJ226GA37xKYj8=

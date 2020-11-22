@@ -7,5 +7,5 @@ require (
 	github.com/Rakiiii/goCoarseningGraphLib v0.7.7
 	github.com/Rakiiii/goGraph v0.3.2
 	github.com/Rakiiii/goPair v0.0.3
-	github.com/Rakiiii/goPerfectMathcingLib v0.2.4
+	github.com/Rakiiii/goPerfectMathcingLib v0.3.1
 )

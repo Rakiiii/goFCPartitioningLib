@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	lsplib "github.com/Rakiiii/goBipartitonLocalSearch"
+	permatchalgh "github.com/Rakiiii/goPerfectMathcingLib"
 )
 
 var newTestDebugFlag bool = false
@@ -50,7 +51,7 @@ func TestConstructMarkMap(t *testing.T) {
 
 	solution := NewFCPartitionSolution(graph)
 
-	solution.constructMarkMap()
+	solution.constructMarkMap(nil)
 
 	for key, value := range solution.markMap {
 		fmt.Println("key:", key, " valur:", value)
@@ -79,7 +80,7 @@ func TestFcPartiotioner(t *testing.T) {
 
 	partitioner := NewFCPartitioner()
 
-	newRes, err := partitioner.Partition(graph, res, groupSize)
+	newRes, err := partitioner.Partition(graph, res, groupSize, permatchalgh.NewCondChecker(1))
 
 	if err != nil {
 		fmt.Print(err)
@@ -135,7 +136,7 @@ func TestPartitionNonRec(t *testing.T) {
 
 	partitioner := NewFCPartitioner()
 
-	newRes, err := partitioner.PartitionNonRec(graph, res, groupSize)
+	newRes, err := partitioner.PartitionNonRec(graph, res, groupSize, permatchalgh.NewCondChecker(1))
 
 	if err != nil {
 		fmt.Print(err)
@@ -169,4 +170,50 @@ func TestPartitionNonRec(t *testing.T) {
 	}
 
 	fmt.Println("TestPartitionNonRec=[ok]")
+}
+
+var benchCom string = "GOGC=off go test -bench=BenchmarkPartitionNonRec -cpuprofile cpu.out"
+
+func BenchmarkPartitionNonRec(b *testing.B) {
+	b.Skip()
+	graph := lsplib.NewGraph()
+	if err := graph.ParseGraph(benchGraph); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	groupSize := graph.AmountOfVertex() / 2
+
+	graph.HungryNumIndependent()
+
+	partitioner := NewFCPartitioner()
+	for i := 0; i < b.N; i++ {
+		res := NewFCPartitionSolution(graph)
+		partitioner.PartitionNonRec(graph, res, groupSize, nil)
+	}
+}
+
+func BenchmarkBasePartitionNonRec(b *testing.B) {
+	graph := lsplib.NewGraph()
+	if err := graph.ParseGraph(benchGraph); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	groupSize := graph.AmountOfVertex() / 2
+
+	graph.HungryNumIndependent()
+	res := NewFCPartitionSolution(graph)
+	if err := res.constructMarkMap(nil); err != nil {
+		return
+	}
+
+	partitioner := NewFCPartitioner()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		baseSolution := lsplib.Solution{}
+		baseSolution.Init(graph)
+		res.Solution = baseSolution
+		partitioner.basePartitionNonRec(graph, res, groupSize)
+	}
 }

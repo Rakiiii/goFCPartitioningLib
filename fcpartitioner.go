@@ -66,8 +66,11 @@ func NewFCPartitionSolution(g lsplib.IGraph) *FCPartitionSolution {
 	return &FCPartitionSolution{Solution: baseSolution, markMap: map[vertexConfiguration]int64{}, fcvector: make([]int, 0), banList: make([]vertexConfiguration, 0)}
 }
 
-func (c *FCPartitionSolution) constructMarkMap() error {
+func (c *FCPartitionSolution) constructMarkMap(detChecker pmlib.IMatrixDeterminantChecker) error {
 	matcher := pmlib.NewRandomMathcerWithNilFixedVertexes()
+	if detChecker != nil {
+		matcher.SetDetChecker(detChecker)
+	}
 	c.constructMarkableSet()
 	contractableGraph := cglib.NewGraph(c.Solution.Gr)
 	for set := range c.markMap {

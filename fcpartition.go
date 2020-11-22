@@ -2,6 +2,7 @@ package fcpartitioninglib
 
 import (
 	lsplib "github.com/Rakiiii/goBipartitonLocalSearch"
+	pmlib "github.com/Rakiiii/goPerfectMathcingLib"
 )
 
 type solutionTreeNode struct {
@@ -108,14 +109,14 @@ func checkNode(s *solutionTreeNode, g lsplib.IGraph, baseSoulution *FCPartitionS
 	}
 }
 
-func (f *FCPartitioner) Partition(g lsplib.IGraph, baseSoulution *FCPartitionSolution, groupSize int) (*FCPartitionSolution, error) {
+func (f *FCPartitioner) Partition(g lsplib.IGraph, baseSoulution *FCPartitionSolution, groupSize int, detChecker pmlib.IMatrixDeterminantChecker) (*FCPartitionSolution, error) {
 	if g.GetAmountOfIndependent() <= 4 {
 		solution := lsplib.LSPartiotionAlgorithmNonRecFast(g, &baseSoulution.Solution, groupSize)
 		baseSoulution.Solution = *solution
 		return baseSoulution, nil
 	}
 
-	if err := baseSoulution.constructMarkMap(); err != nil {
+	if err := baseSoulution.constructMarkMap(detChecker); err != nil {
 		return nil, err
 	}
 
@@ -125,17 +126,21 @@ func (f *FCPartitioner) Partition(g lsplib.IGraph, baseSoulution *FCPartitionSol
 	return baseSoulution, nil
 }
 
-func (f *FCPartitioner) PartitionNonRec(g lsplib.IGraph, baseSoulution *FCPartitionSolution, groupSize int) (*FCPartitionSolution, error) {
+func (f *FCPartitioner) PartitionNonRec(g lsplib.IGraph, baseSoulution *FCPartitionSolution, groupSize int, detChecker pmlib.IMatrixDeterminantChecker) (*FCPartitionSolution, error) {
 	if g.GetAmountOfIndependent() <= 4 {
 		solution := lsplib.LSPartiotionAlgorithmNonRecFast(g, &baseSoulution.Solution, groupSize)
 		baseSoulution.Solution = *solution
 		return baseSoulution, nil
 	}
 
-	if err := baseSoulution.constructMarkMap(); err != nil {
+	if err := baseSoulution.constructMarkMap(detChecker); err != nil {
 		return nil, err
 	}
 
+	return f.basePartitionNonRec(g, baseSoulution, groupSize)
+}
+
+func (f *FCPartitioner) basePartitionNonRec(g lsplib.IGraph, baseSoulution *FCPartitionSolution, groupSize int) (*FCPartitionSolution, error) {
 	checkNode := f.solutionTreeRoot
 	for checkNode.isAnyNodeCheckable() {
 		if checkNode.lNode == nil && checkNode.rNode == nil {
